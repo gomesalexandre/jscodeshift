@@ -159,7 +159,7 @@ function getAllFiles(paths, filter) {
   ).then(concatAll);
 }
 
-function run(transformFile, paths, options) {
+function run(transformFile, paths, options, injectData) {
   let usedRemoteScript = false;
   const cpus = options.cpus ? Math.min(availableCpus, options.cpus) : availableCpus;
   const extensions =
@@ -205,10 +205,10 @@ function run(transformFile, paths, options) {
     );
     return;
   } else {
-    return transform(transformFile);
+    return transform(transformFile, injectData);
   }
 
-  function transform(transformFile) {
+  function transform(transformFile, injectData) {
     return getAllFiles(
       paths,
       name => !extensions || extensions.indexOf(path.extname(name)) != -1
@@ -252,7 +252,7 @@ function run(transformFile, paths, options) {
           }
         }
 
-        const args = [transformFile, options.babel ? 'babel' : 'no-babel'];
+        const args = [transformFile, options.babel ? 'babel' : 'no-babel', JSON.stringify(injectData)];
 
         const workers = [];
         for (let i = 0; i < processes; i++) {

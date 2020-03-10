@@ -23,6 +23,7 @@ let finish;
 let notify;
 let transform;
 let parserFromTransform;
+let injectData;
 
 if (module.parent) {
   emitter = new EventEmitter();
@@ -30,14 +31,14 @@ if (module.parent) {
   finish = () => { emitter.emit('disconnect'); };
   notify = (data) => { emitter.emit('message', data); };
   module.exports = (args) => {
-    setup(args[0], args[1]);
+    setup(args[0], args[1], args[2]);
     return emitter;
   };
 } else {
   finish = () => setImmediate(() => process.disconnect());
   notify = (data) => { process.send(data); };
   process.on('message', (data) => { run(data); });
-  setup(process.argv[2], process.argv[3]);
+  setup(process.argv[2], process.argv[3], process.argv[4] != 'undefined' ? JSON.parse(process.argv[4]) : undefined);
 }
 
 function prepareJscodeshift(options) {
@@ -46,7 +47,8 @@ function prepareJscodeshift(options) {
   return jscodeshift.withParser(parser);
 }
 
-function setup(tr, babel) {
+function setup(tr, babel, dataToInject) {
+  injectData = dataToInject;
   if (babel === 'babel') {
     require('@babel/register')({
       babelrc: false,
@@ -152,7 +154,8 @@ function run(data) {
               stats: options.dry ? stats : empty,
               report: msg => report(file, msg),
             },
-            options
+            options,
+            injectData
           );
           if (!out || out === source) {
             updateStatus(out ? 'nochange' : 'skip', file);
